@@ -19,7 +19,7 @@ This repository can be installed as unity module directly from git url. In this 
 ```
 
 ## As source
-If you can't / don't want to use unity modules, code can be downloaded as sources archive of last release from [Releases page](`https://github.com/Leopotam/ecs/releases/tag/2020.2.22`) or cloned from [classes-based branch](https://github.com/Leopotam/ecs/tree/classes-based).
+If you can't / don't want to use unity modules, code can be downloaded as sources archive of last release from [Releases page](https://github.com/Leopotam/ecs/releases/tag/2020.2.22) or cloned from [classes-based branch](https://github.com/Leopotam/ecs/tree/classes-based).
 
 # Main parts of ecs
 
@@ -283,7 +283,7 @@ systems.SetRunSystemState (idx, false);
 
 # Examples
 ## With sources:
-* [Snake game](https://github.com/Leopotam/ecs-snake)
+* [Snake game](https://github.com/Leopotam/ecs-snake/tree/classes-based)
 * [Pacman game](https://github.com/SH42913/pacmanecs)
 * [GTA5 custom wounds mod](https://github.com/SH42913/gunshotwound3)
 * [Ecs Hybrid Unity integration](https://github.com/SH42913/leoecshybrid)
@@ -297,9 +297,9 @@ systems.SetRunSystemState (idx, false);
 * [Elves-vs-Dwarfs game](https://globalgamejam.org/2019/games/elves-vs-dwarfs)
 
 # Extensions
-* [Unity editor integration](https://github.com/Leopotam/ecs-unityintegration)
-* [Unity uGui events support](https://github.com/Leopotam/ecs-ui)
-* [Multi-threading support](https://github.com/Leopotam/ecs-threads)
+* [Unity editor integration](https://github.com/Leopotam/ecs-unityintegration/tree/classes-based)
+* [Unity uGui events support](https://github.com/Leopotam/ecs-ui/tree/classes-based)
+* [Multi-threading support](https://github.com/Leopotam/ecs-threads/tree/classes-based)
 * [Reactive systems](https://github.com/Leopotam/ecs-reactive)
 * [Engine independent types](https://github.com/Leopotam/ecs-types)
 
