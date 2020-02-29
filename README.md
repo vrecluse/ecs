@@ -15,15 +15,11 @@ Performance, zero/small memory allocations/footprint, no dependencies on any gam
 ## As unity module
 This repository can be installed as unity module directly from git url. In this way new line should be added to `Packages/manifest.json`:
 ```
-"com.leopotam.ecs": "https://github.com/Leopotam/ecs.git",
-```
-By default last released version will be used. If you need trunk / developing version then `develop` name of branch should be added after hash:
-```
-"com.leopotam.ecs": "https://github.com/Leopotam/ecs.git#develop",
+"com.leopotam.ecs": "https://github.com/Leopotam/ecs.git#classes-based",
 ```
 
 ## As source
-If you can't / don't want to use unity modules, code can be downloaded as sources archive of required release from [Releases page](`https://github.com/Leopotam/ecs/releases`).
+If you can't / don't want to use unity modules, code can be downloaded as sources archive of last release from [Releases page](`https://github.com/Leopotam/ecs/releases/tag/2020.2.22`) or cloned from [classes-based branch](https://github.com/Leopotam/ecs/tree/classes-based).
 
 # Main parts of ecs
 
