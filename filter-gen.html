@@ -91,7 +91,9 @@ namespace Leopotam.Ecs {
 
         public Type[] IncludedTypes;
         public Type[] ExcludedTypes;
-
+#if UNITY_2019_1_OR_NEWER
+    [UnityEngine.Scripting.Preserve]
+#endif
         protected EcsFilter (EcsWorld world) {
             EntitiesCacheSize = world.Config.FilterEntitiesCacheSize;
             Entities = new EcsEntity[EntitiesCacheSize];
@@ -426,7 +428,9 @@ namespace Leopotam.Ecs {
             return i;
         }
 <% } -%>
-
+#if UNITY_2019_1_OR_NEWER
+    [UnityEngine.Scripting.Preserve]
+#endif
         protected EcsFilter (EcsWorld world) : base (world) {
 <% for (let ii = 1; ii <= i; ii++) { -%>
             _allow<%=ii%> = !EcsComponentType<Inc<%=ii%>>.IsIgnoreInFilter;
@@ -511,6 +515,9 @@ namespace Leopotam.Ecs {
 <% for (let ee = 1; ee <= e; ee++) { -%>
             where Exc<%=ee%> : struct<% if (ee == e) { %> {<% } %>
 <% } -%>
+#if UNITY_2019_1_OR_NEWER
+    [UnityEngine.Scripting.Preserve]
+#endif
             protected Exclude (EcsWorld world) : base (world) {
                 ExcludedTypeIndices = new[] {
 <% for (let ee = 1; ee <= e; ee++) { -%>
