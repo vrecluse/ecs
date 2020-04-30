@@ -468,7 +468,7 @@ namespace Leopotam.Ecs {
                 if (_allow<%=ii%>) { Array.Resize (ref _get<%=ii%>, newSize); }
 <% } -%>
             }
-            // inlined and optimized World.GetComponent() call.
+            // inlined and optimized EcsEntity.Get() call.
             ref var entityData = ref entity.Owner.GetEntityData (entity);
 <% for (let ii = 1; ii <= i; ii++) { -%>
             var allow<%=ii%> = _allow<%=ii%>;
