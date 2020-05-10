@@ -375,14 +375,14 @@ namespace Leopotam.Ecs {
 <% for (let ii = 1; ii <= i; ii++) { -%>
 
         [MethodImpl (MethodImplOptions.AggressiveInlining)]
-        public ref Inc<%=ii%> Get<%=ii%> (int idx) {
+        public ref Inc<%=ii%> Get<%=ii%> (in int idx) {
             return ref _pool<%=ii%>.Items[_get<%=ii%>[idx]];
         }
 <% } -%>
 <% for (let ii = 1; ii <= i; ii++) { -%>
 
         [MethodImpl (MethodImplOptions.AggressiveInlining)]
-        public EcsComponentRef<Inc<%=ii%>> Get<%=ii%>Ref (int idx) {
+        public EcsComponentRef<Inc<%=ii%>> Get<%=ii%>Ref (in int idx) {
             return _pool<%=ii%>.Ref (_get<%=ii%>[idx]);
         }
 <% } -%>
