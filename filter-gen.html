@@ -56,6 +56,7 @@ using System.Runtime.CompilerServices;
 // ReSharper disable ClassNeverInstantiated.Global
 
 namespace Leopotam.Ecs {
+#if LEOECS_FILTER_EVENTS
     /// <summary>
     /// Common interface for all filter listeners.
     /// </summary>
@@ -63,7 +64,7 @@ namespace Leopotam.Ecs {
         void OnEntityAdded (in EcsEntity entity);
         void OnEntityRemoved (in EcsEntity entity);
     }
-
+#endif
     /// <summary>
     /// Container for filtered entities based on specified constraints.
     /// </summary>
@@ -82,10 +83,10 @@ namespace Leopotam.Ecs {
 
         DelayedOp[] _delayedOps;
         int _delayedOpsCount;
-
+#if LEOECS_FILTER_EVENTS
         protected IEcsFilterListener[] Listeners = new IEcsFilterListener[4];
         protected int ListenersCount;
-
+#endif
         protected internal int[] IncludedTypeIndices;
         protected internal int[] ExcludedTypeIndices;
 
@@ -128,7 +129,7 @@ namespace Leopotam.Ecs {
         public bool IsEmpty () {
             return EntitiesCount == 0;
         }
-
+#if LEOECS_FILTER_EVENTS
         /// <summary>
         /// Subscribes listener to filter events.
         /// </summary>
@@ -162,7 +163,7 @@ namespace Leopotam.Ecs {
                 }
             }
         }
-
+#endif
         /// <summary>
         /// Is filter compatible with components on entity with optional added / removed component.
         /// </summary>
@@ -223,7 +224,7 @@ namespace Leopotam.Ecs {
             op.Entity = entity;
             return true;
         }
-
+#if LEOECS_FILTER_EVENTS
         [MethodImpl (MethodImplOptions.AggressiveInlining)]
         protected void ProcessListeners (bool isAdd, in EcsEntity entity) {
             if (isAdd) {
@@ -236,7 +237,7 @@ namespace Leopotam.Ecs {
                 }
             }
         }
-
+#endif
         [MethodImpl (MethodImplOptions.AggressiveInlining)]
         void Lock () {
             LockCount++;
@@ -484,7 +485,9 @@ namespace Leopotam.Ecs {
 <% } -%>
             }
             Entities[EntitiesCount++] = entity;
+#if LEOECS_FILTER_EVENTS
             ProcessListeners (true, entity);
+#endif
         }
 
         /// <summary>
@@ -504,7 +507,9 @@ namespace Leopotam.Ecs {
                         if (_allow<%=ii%>) { _get<%=ii%>[i] = _get<%=ii%>[EntitiesCount]; }
 <% } -%>
                     }
+#if LEOECS_FILTER_EVENTS
                     ProcessListeners (false, entity);
+#endif
                     break;
                 }
             }
