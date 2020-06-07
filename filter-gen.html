@@ -20,22 +20,22 @@
 <script src="https://cdn.jsdelivr.net/npm/ejs@3.0.1/ejs.min.js"></script>
 
 <body>
-    <div class="container">
-        <div>
-            <label>Include components amount</label>
-            <input id="incValue" type="number" value="4" />
-        </div>
-        <div>
-            <label>Exclude components amount</label>
-            <input id="excValue" type="number" value="2" />
-        </div>
-        <div>
-            <button onclick="onGenClick()">Generate</button>
-        </div>
-        <div>
-            <textarea id="output" rows="40" cols="100" readonly wrap="off"></textarea>
-        </div>
+<div class="container">
+    <div>
+        <label>Include components amount</label>
+        <input id="incValue" type="number" value="4" />
     </div>
+    <div>
+        <label>Exclude components amount</label>
+        <input id="excValue" type="number" value="2" />
+    </div>
+    <div>
+        <button onclick="onGenClick()">Generate</button>
+    </div>
+    <div>
+        <textarea id="output" rows="40" cols="100" readonly wrap="off"></textarea>
+    </div>
+</div>
 </body>
 
 <script>
@@ -50,6 +50,7 @@
 // ----------------------------------------------------------------------------
 
 using System;
+using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 
 // ReSharper disable InconsistentNaming
@@ -77,6 +78,7 @@ namespace Leopotam.Ecs {
 #endif
     public abstract class EcsFilter {
         protected EcsEntity[] Entities;
+        protected readonly Dictionary<int, int> EntitiesMap;
         protected int EntitiesCount;
         protected int LockCount;
         protected readonly int EntitiesCacheSize;
@@ -93,14 +95,19 @@ namespace Leopotam.Ecs {
         public Type[] IncludedTypes;
         public Type[] ExcludedTypes;
 #if UNITY_2019_1_OR_NEWER
-    [UnityEngine.Scripting.Preserve]
+        [UnityEngine.Scripting.Preserve]
 #endif
         protected EcsFilter (EcsWorld world) {
             EntitiesCacheSize = world.Config.FilterEntitiesCacheSize;
             Entities = new EcsEntity[EntitiesCacheSize];
+            EntitiesMap = new Dictionary<int, int> (EntitiesCacheSize);
             _delayedOps = new DelayedOp[EntitiesCacheSize];
         }
-
+#if DEBUG
+        public Dictionary<int, int> GetInternalEntitiesMap () {
+            return EntitiesMap;
+        }
+#endif
         [MethodImpl (MethodImplOptions.AggressiveInlining)]
         public Enumerator GetEnumerator () {
             return new Enumerator (this);
@@ -430,7 +437,7 @@ namespace Leopotam.Ecs {
         }
 <% } -%>
 #if UNITY_2019_1_OR_NEWER
-    [UnityEngine.Scripting.Preserve]
+        [UnityEngine.Scripting.Preserve]
 #endif
         protected EcsFilter (EcsWorld world) : base (world) {
 <% for (let ii = 1; ii <= i; ii++) { -%>
@@ -484,6 +491,7 @@ namespace Leopotam.Ecs {
                 }
 <% } -%>
             }
+            EntitiesMap[entity.GetInternalId ()] = EntitiesCount;
             Entities[EntitiesCount++] = entity;
 #if LEOECS_FILTER_EVENTS
             ProcessListeners (true, entity);
@@ -498,21 +506,20 @@ namespace Leopotam.Ecs {
         [MethodImpl (MethodImplOptions.AggressiveInlining)]
         public override void OnRemoveEntity (in EcsEntity entity) {
             if (AddDelayedOp (false, entity)) { return; }
-            for (int i = 0, iMax = EntitiesCount; i < iMax; i++) {
-                if (Entities[i] == entity) {
-                    EntitiesCount--;
-                    if (i < EntitiesCount) {
-                        Entities[i] = Entities[EntitiesCount];
+            var entityId = entity.GetInternalId ();
+            var idx = EntitiesMap[entityId];
+            EntitiesMap[entityId] = int.MaxValue;
+            EntitiesCount--;
+            if (idx < EntitiesCount) {
+                Entities[idx] = Entities[EntitiesCount];
+                EntitiesMap[Entities[idx].GetInternalId ()] = idx;
 <% for (let ii = 1; ii <= i; ii++) { -%>
-                        if (_allow<%=ii%>) { _get<%=ii%>[i] = _get<%=ii%>[EntitiesCount]; }
+                if (_allow<%=ii%>) { _get<%=ii%>[idx] = _get<%=ii%>[EntitiesCount]; }
 <% } -%>
-                    }
-#if LEOECS_FILTER_EVENTS
-                    ProcessListeners (false, entity);
-#endif
-                    break;
-                }
             }
+#if LEOECS_FILTER_EVENTS
+            ProcessListeners (false, entity);
+#endif
         }
 <% for (let e = 1; e <= data.excCount; e++) { -%>
 
@@ -521,7 +528,7 @@ namespace Leopotam.Ecs {
             where Exc<%=ee%> : struct<% if (ee == e) { %> {<% } %>
 <% } -%>
 #if UNITY_2019_1_OR_NEWER
-    [UnityEngine.Scripting.Preserve]
+            [UnityEngine.Scripting.Preserve]
 #endif
             protected Exclude (EcsWorld world) : base (world) {
                 ExcludedTypeIndices = new[] {
