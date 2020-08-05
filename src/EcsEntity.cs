@@ -17,7 +17,7 @@ namespace Leopotam.Ecs {
         internal EcsWorld Owner;
 
         public static readonly EcsEntity Null = new EcsEntity ();
-
+        
         [MethodImpl (MethodImplOptions.AggressiveInlining)]
         public static bool operator == (in EcsEntity lhs, in EcsEntity rhs) {
             return lhs.Id == rhs.Id && lhs.Gen == rhs.Gen;
@@ -58,21 +58,8 @@ namespace Leopotam.Ecs {
 #endif
     public static class EcsEntityExtensions {
         /// <summary>
-        /// Attaches or finds already attached component to entity.
-        /// </summary>
-        /// <typeparam name="T">Type of component.</typeparam>
-#if ENABLE_IL2CPP
-        [Unity.IL2CPP.CompilerServices.Il2CppSetOption (Unity.IL2CPP.CompilerServices.Option.NullChecks, false)]
-        [Unity.IL2CPP.CompilerServices.Il2CppSetOption (Unity.IL2CPP.CompilerServices.Option.ArrayBoundsChecks, false)]
-#endif
-        [MethodImpl (MethodImplOptions.AggressiveInlining)]
-        [Obsolete ("Use Get() instead, this method will be removed after 2020.6.22 release.")]
-        public static ref T Set<T> (in this EcsEntity entity) where T : struct {
-            return ref Get<T> (entity);
-        }
-
-        /// <summary>
         /// Replaces or adds new one component to entity.
+        /// Slower than Get() direct call.
         /// </summary>
         /// <typeparam name="T">Type of component.</typeparam>
         /// <param name="entity">Entity.</param>
@@ -82,9 +69,9 @@ namespace Leopotam.Ecs {
         [Unity.IL2CPP.CompilerServices.Il2CppSetOption (Unity.IL2CPP.CompilerServices.Option.ArrayBoundsChecks, false)]
 #endif
         [MethodImpl (MethodImplOptions.AggressiveInlining)]
-        public static ref EcsEntity Replace<T> (ref this EcsEntity entity, in T item) where T : struct {
+        public static EcsEntity Replace<T> (in this EcsEntity entity, in T item) where T : struct {
             Get<T> (entity) = item;
-            return ref entity;
+            return entity;
         }
 
         /// <summary>
@@ -159,20 +146,6 @@ namespace Leopotam.Ecs {
         [Unity.IL2CPP.CompilerServices.Il2CppSetOption (Unity.IL2CPP.CompilerServices.Option.ArrayBoundsChecks, false)]
 #endif
         [MethodImpl (MethodImplOptions.AggressiveInlining)]
-        [Obsolete ("Use Del() instead, this method will be removed after 2020.6.22 release.")]
-        public static void Unset<T> (in this EcsEntity entity) where T : struct {
-            Del<T> (entity);
-        }
-
-        /// <summary>
-        /// Removes component from entity.
-        /// </summary>
-        /// <typeparam name="T">Type of component.</typeparam>
-#if ENABLE_IL2CPP
-        [Unity.IL2CPP.CompilerServices.Il2CppSetOption (Unity.IL2CPP.CompilerServices.Option.NullChecks, false)]
-        [Unity.IL2CPP.CompilerServices.Il2CppSetOption (Unity.IL2CPP.CompilerServices.Option.ArrayBoundsChecks, false)]
-#endif
-        [MethodImpl (MethodImplOptions.AggressiveInlining)]
         public static void Del<T> (in this EcsEntity entity) where T : struct {
             var typeIndex = EcsComponentType<T>.TypeIndex;
             ref var entityData = ref entity.Owner.GetEntityData (entity);
@@ -214,6 +187,108 @@ namespace Leopotam.Ecs {
         }
 
         /// <summary>
+        /// Creates copy of entity with all components.
+        /// </summary>
+#if ENABLE_IL2CPP
+        [Unity.IL2CPP.CompilerServices.Il2CppSetOption (Unity.IL2CPP.CompilerServices.Option.NullChecks, false)]
+        [Unity.IL2CPP.CompilerServices.Il2CppSetOption (Unity.IL2CPP.CompilerServices.Option.ArrayBoundsChecks, false)]
+#endif
+        [MethodImpl (MethodImplOptions.AggressiveInlining)]
+        public static EcsEntity Copy (in this EcsEntity entity) {
+            var owner = entity.Owner;
+#if DEBUG
+            if (owner == null) { throw new Exception ("Cant copy invalid entity."); }
+#endif
+            ref var srcData = ref owner.GetEntityData (entity);
+#if DEBUG
+            if (srcData.Gen != entity.Gen) { throw new Exception ("Cant copy destroyed entity."); }
+#endif
+            var dstEntity = owner.NewEntity ();
+            ref var dstData = ref owner.GetEntityData (dstEntity);
+            if (dstData.Components.Length < srcData.ComponentsCountX2) {
+                dstData.Components = new int[srcData.Components.Length];
+            }
+            dstData.ComponentsCountX2 = 0;
+            for (int i = 0, iiMax = srcData.ComponentsCountX2; i < iiMax; i += 2) {
+                var typeIdx = srcData.Components[i];
+                var pool = owner.ComponentPools[typeIdx];
+                var dstItemIdx = pool.New ();
+                dstData.Components[i] = typeIdx;
+                dstData.Components[i + 1] = dstItemIdx;
+                pool.CopyData (srcData.Components[i + 1], dstItemIdx);
+                dstData.ComponentsCountX2 += 2;
+                owner.UpdateFilters (typeIdx, dstEntity, dstData);
+            }
+#if DEBUG
+            for (var ii = 0; ii < owner.DebugListeners.Count; ii++) {
+                owner.DebugListeners[ii].OnComponentListChanged (entity);
+            }
+#endif
+            return dstEntity;
+        }
+
+        /// <summary>
+        /// Adds copies of source entity components
+        /// on target entity (overwrite exists) and
+        /// removes source entity.
+        /// </summary>
+#if ENABLE_IL2CPP
+        [Unity.IL2CPP.CompilerServices.Il2CppSetOption (Unity.IL2CPP.CompilerServices.Option.NullChecks, false)]
+        [Unity.IL2CPP.CompilerServices.Il2CppSetOption (Unity.IL2CPP.CompilerServices.Option.ArrayBoundsChecks, false)]
+#endif
+        [MethodImpl (MethodImplOptions.AggressiveInlining)]
+        public static void MoveTo (in this EcsEntity source, in EcsEntity target) {
+#if DEBUG
+            if (!source.IsAlive ()) { throw new Exception ("Cant move from invalid entity."); }
+            if (!target.IsAlive ()) { throw new Exception ("Cant move to invalid entity."); }
+            if (source.Owner != target.Owner) { throw new Exception ("Cant move data between worlds."); }
+            if (source.AreEquals (target)) { throw new Exception ("Source and target entities are same."); }
+            var componentsListChanged = false;
+#endif
+            var owner = source.Owner;
+            ref var srcData = ref owner.GetEntityData (source);
+            ref var dstData = ref owner.GetEntityData (target);
+            if (dstData.Components.Length < srcData.ComponentsCountX2) {
+                dstData.Components = new int[srcData.Components.Length];
+            }
+            for (int i = 0, iiMax = srcData.ComponentsCountX2; i < iiMax; i += 2) {
+                var typeIdx = srcData.Components[i];
+                var pool = owner.ComponentPools[typeIdx];
+                var j = dstData.ComponentsCountX2 - 2;
+                // search exist component on target.
+                for (; j >= 0; j -= 2) {
+                    if (dstData.Components[j] == typeIdx) { break; }
+                }
+                if (j >= 0) {
+                    // found, copy data.
+                    pool.CopyData (srcData.Components[i + 1], dstData.Components[j + 1]);
+                } else {
+                    // add new one.
+                    if (dstData.Components.Length == dstData.ComponentsCountX2) {
+                        Array.Resize (ref dstData.Components, dstData.ComponentsCountX2 << 1);
+                    }
+                    dstData.Components[dstData.ComponentsCountX2] = typeIdx;
+                    var idx = pool.New ();
+                    dstData.Components[dstData.ComponentsCountX2 + 1] = idx;
+                    dstData.ComponentsCountX2 += 2;
+                    pool.CopyData (srcData.Components[i + 1], idx);
+                    owner.UpdateFilters (typeIdx, target, dstData);
+#if DEBUG
+                    componentsListChanged = true;
+#endif
+                }
+            }
+#if DEBUG
+            if (componentsListChanged) {
+                for (var ii = 0; ii < owner.DebugListeners.Count; ii++) {
+                    owner.DebugListeners[ii].OnComponentListChanged (target);
+                }
+            }
+#endif
+            source.Destroy ();
+        }
+
+        /// <summary>
         /// Gets component index at component pool.
         /// If component doesn't exists "-1" will be returned.
         /// </summary>
@@ -240,8 +315,25 @@ namespace Leopotam.Ecs {
         /// <summary>
         /// Gets internal identifier.
         /// </summary>
+        [MethodImpl (MethodImplOptions.AggressiveInlining)]
         public static int GetInternalId (in this EcsEntity entity) {
             return entity.Id;
+        }
+
+        /// <summary>
+        /// Compares entities. 
+        /// </summary>
+        [MethodImpl (MethodImplOptions.AggressiveInlining)]
+        public static bool AreEquals (in this EcsEntity lhs, in EcsEntity rhs) {
+            return lhs.Id == rhs.Id && lhs.Gen == rhs.Gen;
+        }
+
+        /// <summary>
+        /// Compares internal Ids without Gens check. Use carefully! 
+        /// </summary>
+        [MethodImpl (MethodImplOptions.AggressiveInlining)]
+        public static bool AreIdEquals (in this EcsEntity lhs, in EcsEntity rhs) {
+            return lhs.Id == rhs.Id;
         }
 
         /// <summary>
@@ -317,7 +409,7 @@ namespace Leopotam.Ecs {
         }
 
         /// <summary>
-        /// Is entity alive.
+        /// Is entity alive. If world was destroyed - false will be returned.
         /// </summary>
 #if ENABLE_IL2CPP
         [Unity.IL2CPP.CompilerServices.Il2CppSetOption (Unity.IL2CPP.CompilerServices.Option.NullChecks, false)]
@@ -325,9 +417,21 @@ namespace Leopotam.Ecs {
 #endif
         [MethodImpl (MethodImplOptions.AggressiveInlining)]
         public static bool IsAlive (in this EcsEntity entity) {
-            if (entity.Owner == null) { return false; }
+            if (!IsWorldAlive (entity)) { return false; }
             ref var entityData = ref entity.Owner.GetEntityData (entity);
             return entityData.Gen == entity.Gen && entityData.ComponentsCountX2 >= 0;
+        }
+
+        /// <summary>
+        /// Is world alive.
+        /// </summary>
+#if ENABLE_IL2CPP
+        [Unity.IL2CPP.CompilerServices.Il2CppSetOption (Unity.IL2CPP.CompilerServices.Option.NullChecks, false)]
+        [Unity.IL2CPP.CompilerServices.Il2CppSetOption (Unity.IL2CPP.CompilerServices.Option.ArrayBoundsChecks, false)]
+#endif
+        [MethodImpl (MethodImplOptions.AggressiveInlining)]
+        public static bool IsWorldAlive (in this EcsEntity entity) {
+            return entity.Owner != null && entity.Owner.IsAlive ();
         }
 
         /// <summary>
