@@ -364,6 +364,7 @@ namespace Leopotam.Ecs {
         /// </summary>
         [StructLayout (LayoutKind.Sequential, Pack = 2)]
         public struct EcsEntityData {
+            public bool InDestroying;
             public ushort Gen;
             public short ComponentsCountX2;
             public int[] Components;
