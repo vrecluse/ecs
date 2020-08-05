@@ -55,6 +55,11 @@ entity.Replace (weapon);
 // With Replace() you can chain component's creation:
 var entity2 = world.NewEntity ();
 entity2.Replace (new Component1 { Id = 10 }).Replace (new Component2 { Name = "Username" });
+// Any entity can be copied with all components:
+var entity2Copy = entity2.Copy ();
+// Any entity can be merged / "moved" to another entity (source will be destroyed):
+var newEntity = world.NewEntity ();
+entity2Copy.MoveTo (newEntity); // all components from entity2Copy moved to newEntity, entity2Copy destroyed.
 // any entity can be destroyed. 
 entity.Destroy ();
 ```
@@ -289,18 +294,21 @@ systems.SetRunSystemState (idx, false);
 
 # Examples
 ## With sources:
-* [Snake game](https://github.com/Leopotam/ecs-snake)
 * [TicTacToe game](https://github.com/GreatVV/TicToe). "Making of" [video (in Russian)](https://www.youtube.com/watch?v=J3HG8i-DrL8)
 * [Pacman game](https://github.com/SH42913/pacmanecs)
+* [SpaceInvaders (Guns&Bullets variation) game](https://github.com/GoodCatGames/SpaceInvadersEcs)
+* [Runner game](https://github.com/t1az2z/RunnerECS)
+* [Snake game](https://github.com/Leopotam/ecs-snake)
 * [GTA5 custom wounds mod (powered by classes-based version)](https://github.com/SH42913/gunshotwound3)
 
 ## Released games:
-* ["Natives" game](https://alex-kpojb.itch.io/natives-ecs)
-* ["PrincessRun" game](https://play.google.com/store/apps/details?id=ru.zlodey.princessrun)
-* ["TowerRunner Revenge" game](https://play.google.com/store/apps/details?id=ru.zlodey.towerrunner20)
-* ["HypnoTap" game](https://play.google.com/store/apps/details?id=com.ZlodeyStudios.HypnoTap)
-* ["I Am Arrow" game](https://play.google.com/store/apps/details?id=com.BigMoodGame.ArrowingAround)
-* ["Cheek Clapper: BIG FACTS!" game](https://play.google.com/store/apps/details?id=com.BigMoodGames.FactPuncherFight)
+* ["Nasty Bird"](https://play.google.com/store/apps/details?id=magic.bird.fly)
+* ["I Am Arrow"](https://play.google.com/store/apps/details?id=com.BigMoodGame.ArrowingAround)
+* ["HypnoTap"](https://play.google.com/store/apps/details?id=com.ZlodeyStudios.HypnoTap)
+* ["PrincessRun"](https://play.google.com/store/apps/details?id=ru.zlodey.princessrun)
+* ["TowerRunner Revenge"](https://play.google.com/store/apps/details?id=ru.zlodey.towerrunner20)
+* ["Cheek Clapper: BIG FACTS!"](https://play.google.com/store/apps/details?id=com.BigMoodGames.FactPuncherFight)
+* ["Natives"](https://alex-kpojb.itch.io/natives-ecs)
 
 # Extensions
 * [Unity editor integration](https://github.com/Leopotam/ecs-unityintegration)
@@ -377,23 +385,18 @@ Current implementation of foreach-loop fast enough (custom enumerator, no memory
 
 If you want to simplify your code and keep reset/init code at one place, you can setup custom handler to process cleanup / initialization for component:
 ```csharp
-[EcsAutoResetCheck]
-struct MyComponent {
+struct MyComponent : IEcsAutoReset<MyComponent> {
     public int Id;
     public object LinkToAnotherComponent;
 
-    public static void CustomReset (ref MyComponent c) {
+    public void AutoReset (ref MyComponent c) {
         c.Id = 2;
         c.LinkToAnotherComponent = null;
     }
 }
-...
-world.GetPool<MyComponent> ().SetAutoReset (MyComponent.CustomReset);
 ```
 This method will be automatically called for brand new component instance and after component removing from entity and before recycling to component pool.
 > Important: With custom `AutoReset` behaviour there are no any additional checks for reference-type fields, you should provide correct cleanup/init behaviour without possible memory leaks.
-
-> Important: Attribute `[EcsAutoResetCheck]` can be useful for mark components that should have custom `AutoReset` behaviour. This attribute works in `DEBUG` mode only.  
 
 ### I use components as events that works only one frame, then remove it at last system in execution sequence. It's boring, how I can automate it?
 
