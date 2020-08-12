@@ -5,10 +5,8 @@
 // ----------------------------------------------------------------------------
 
 using System;
-using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Threading;
-using JetBrains.Annotations;
 
 // ReSharper disable ClassNeverInstantiated.Global
 
@@ -38,6 +36,11 @@ namespace Leopotam.Ecs {
     /// Marks field of IEcsSystem class to be ignored during dependency injection.
     /// </summary>
     public sealed class EcsIgnoreInjectAttribute : Attribute { }
+
+    /// <summary>
+    /// Marks field of data class to be injected.
+    /// </summary>
+    public sealed class EcsInjectAttribute : Attribute { }
 
     /// <summary>
     /// Global descriptor of used component type.

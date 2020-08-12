@@ -236,6 +236,7 @@ namespace Leopotam.Ecs {
             if (_initialized) { throw new Exception ("Already initialized."); }
             if (_destroyed) { throw new Exception ("Cant touch after destroy."); }
 #endif
+            InjectData(_injections);
             ProcessInjects ();
             // IEcsPreInitSystem processing.
             for (int i = 0, iMax = _allSystems.Count; i < iMax; i++) {
@@ -318,6 +319,35 @@ namespace Leopotam.Ecs {
 #endif
         }
 
+        /// <summary>
+        /// Injects custom data to fields of other data instance.
+        /// </summary>
+        /// <param name="injections">Additional instances for injection.</param>
+        public static void InjectData(Dictionary<Type, object> injections)
+        {
+            var injectAttributeType = typeof(EcsInjectAttribute);
+            foreach (var kv in injections)
+            {
+                var dataType = kv.Value.GetType();
+                foreach (var f in dataType.GetFields(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance))
+                {
+                    // skip statics or fields with [EcsIgnoreInject] attribute.
+                    if (f.IsStatic || !Attribute.IsDefined (f, injectAttributeType)) {
+                        continue;
+                    }
+                    // Other injections.
+                    foreach (var pair in injections)
+                    {
+                        if (f.FieldType.IsAssignableFrom(pair.Key))
+                        {
+                            f.SetValue(kv.Value, pair.Value);
+                            break;
+                        }
+                    }
+                }
+
+            }
+        }
         /// <summary>
         /// Injects custom data to fields of ISystem instance.
         /// </summary>
