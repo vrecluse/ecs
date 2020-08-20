@@ -17,6 +17,12 @@ namespace Leopotam.Ecs {
         internal EcsWorld Owner;
 
         public static readonly EcsEntity Null = new EcsEntity ();
+
+        public EcsWorld World
+        {
+            [MethodImpl( MethodImplOptions.AggressiveInlining )]
+            get => Owner;
+        }
         
         [MethodImpl (MethodImplOptions.AggressiveInlining)]
         public static bool operator == (in EcsEntity lhs, in EcsEntity rhs) {
