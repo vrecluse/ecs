@@ -423,12 +423,13 @@ namespace Leopotam.Ecs {
             // inlined and optimized EcsEntity.Get() call.
             ref var entityData = ref entity.Owner.GetEntityData (entity);
             var allow1 = _allow1;
-            for (int i = 0, iMax = entityData.ComponentsCountX2; i < iMax; i += 2) {
+            for (int i = 0, iMax = entityData.ComponentsCountX2, left = 1; left > 0 && i < iMax; i += 2) {
                 var typeIdx = entityData.Components[i];
                 var itemIdx = entityData.Components[i + 1];
                 if (allow1 && typeIdx == EcsComponentType<Inc1>.TypeIndex) {
                     _get1[EntitiesCount] = itemIdx;
                     allow1 = false;
+                    left--;
                 }
             }
             EntitiesMap[entity.GetInternalId ()] = EntitiesCount;
@@ -570,16 +571,19 @@ namespace Leopotam.Ecs {
             ref var entityData = ref entity.Owner.GetEntityData (entity);
             var allow1 = _allow1;
             var allow2 = _allow2;
-            for (int i = 0, iMax = entityData.ComponentsCountX2; i < iMax; i += 2) {
+            for (int i = 0, iMax = entityData.ComponentsCountX2, left = 2; left > 0 && i < iMax; i += 2) {
                 var typeIdx = entityData.Components[i];
                 var itemIdx = entityData.Components[i + 1];
                 if (allow1 && typeIdx == EcsComponentType<Inc1>.TypeIndex) {
                     _get1[EntitiesCount] = itemIdx;
                     allow1 = false;
+                    left--;
+                    continue;
                 }
                 if (allow2 && typeIdx == EcsComponentType<Inc2>.TypeIndex) {
                     _get2[EntitiesCount] = itemIdx;
                     allow2 = false;
+                    left--;
                 }
             }
             EntitiesMap[entity.GetInternalId ()] = EntitiesCount;
@@ -743,20 +747,25 @@ namespace Leopotam.Ecs {
             var allow1 = _allow1;
             var allow2 = _allow2;
             var allow3 = _allow3;
-            for (int i = 0, iMax = entityData.ComponentsCountX2; i < iMax; i += 2) {
+            for (int i = 0, iMax = entityData.ComponentsCountX2, left = 3; left > 0 && i < iMax; i += 2) {
                 var typeIdx = entityData.Components[i];
                 var itemIdx = entityData.Components[i + 1];
                 if (allow1 && typeIdx == EcsComponentType<Inc1>.TypeIndex) {
                     _get1[EntitiesCount] = itemIdx;
                     allow1 = false;
+                    left--;
+                    continue;
                 }
                 if (allow2 && typeIdx == EcsComponentType<Inc2>.TypeIndex) {
                     _get2[EntitiesCount] = itemIdx;
                     allow2 = false;
+                    left--;
+                    continue;
                 }
                 if (allow3 && typeIdx == EcsComponentType<Inc3>.TypeIndex) {
                     _get3[EntitiesCount] = itemIdx;
                     allow3 = false;
+                    left--;
                 }
             }
             EntitiesMap[entity.GetInternalId ()] = EntitiesCount;
@@ -942,24 +951,31 @@ namespace Leopotam.Ecs {
             var allow2 = _allow2;
             var allow3 = _allow3;
             var allow4 = _allow4;
-            for (int i = 0, iMax = entityData.ComponentsCountX2; i < iMax; i += 2) {
+            for (int i = 0, iMax = entityData.ComponentsCountX2, left = 4; left > 0 && i < iMax; i += 2) {
                 var typeIdx = entityData.Components[i];
                 var itemIdx = entityData.Components[i + 1];
                 if (allow1 && typeIdx == EcsComponentType<Inc1>.TypeIndex) {
                     _get1[EntitiesCount] = itemIdx;
                     allow1 = false;
+                    left--;
+                    continue;
                 }
                 if (allow2 && typeIdx == EcsComponentType<Inc2>.TypeIndex) {
                     _get2[EntitiesCount] = itemIdx;
                     allow2 = false;
+                    left--;
+                    continue;
                 }
                 if (allow3 && typeIdx == EcsComponentType<Inc3>.TypeIndex) {
                     _get3[EntitiesCount] = itemIdx;
                     allow3 = false;
+                    left--;
+                    continue;
                 }
                 if (allow4 && typeIdx == EcsComponentType<Inc4>.TypeIndex) {
                     _get4[EntitiesCount] = itemIdx;
                     allow4 = false;
+                    left--;
                 }
             }
             EntitiesMap[entity.GetInternalId ()] = EntitiesCount;
