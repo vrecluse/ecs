@@ -1051,7 +1051,7 @@ namespace Leopotam.Ecs {
 #if UNITY_2019_1_OR_NEWER
     [UnityEngine.Scripting.Preserve]
 #endif
-    public class EcsFilter<Inc1, Inc2, Inc3, Inc4, Inc5> : EcsFilter
+    public class EcsFilter<Inc1, Inc2, Inc3, Inc4, Inc5> : EcsFilterBase
         where Inc1 : struct
         where Inc2 : struct
         where Inc3 : struct
@@ -1290,7 +1290,7 @@ namespace Leopotam.Ecs {
 #if UNITY_2019_1_OR_NEWER
     [UnityEngine.Scripting.Preserve]
 #endif
-    public class EcsFilter<Inc1, Inc2, Inc3, Inc4, Inc5, Inc6> : EcsFilter
+    public class EcsFilter<Inc1, Inc2, Inc3, Inc4, Inc5, Inc6> : EcsFilterBase
         where Inc1 : struct
         where Inc2 : struct
         where Inc3 : struct
