@@ -133,6 +133,32 @@ namespace Leopotam.Ecs {
                     return ref ((EcsComponentPool<T>) entity.Owner.ComponentPools[typeIdx]).Items[entityData.Components[i + 1]];
                 }
             }
+            throw new Exception($"Entity:{entity} Component:{typeof(T).FullName} Not Found!!!");
+        }
+        /// <summary>
+        /// Returns exist component on entity or adds new one otherwise.
+        /// </summary>
+        /// <typeparam name="T">Type of component.</typeparam>
+#if ENABLE_IL2CPP
+        [Unity.IL2CPP.CompilerServices.Il2CppSetOption (Unity.IL2CPP.CompilerServices.Option.NullChecks, false)]
+        [Unity.IL2CPP.CompilerServices.Il2CppSetOption (Unity.IL2CPP.CompilerServices.Option.ArrayBoundsChecks, false)]
+#endif
+        [MethodImpl (MethodImplOptions.AggressiveInlining)]
+        public static ref T Ensure<T> (in this EcsEntity entity) where T : struct {
+            ref var entityData = ref entity.Owner.GetEntityData (entity);
+#if DEBUG
+            if (entityData.Gen != entity.Gen) { throw new Exception ("Cant add component to destroyed entity."); }
+#endif
+            var typeIdx = EcsComponentType<T>.TypeIndex;
+            // check already attached components.
+            for (int i = 0, iiMax = entityData.ComponentsCountX2; i < iiMax; i += 2) {
+                if (entityData.Components[i] == typeIdx) {
+                    return ref ((EcsComponentPool<T>) entity.Owner.ComponentPools[typeIdx]).Items[entityData.Components[i + 1]];
+                }
+            }
+#if DEBUG && UNITY_EDITOR
+            // UnityEngine.Debug.LogWarning($"Component not exist!!! {typeof(T).FullName}");
+#endif
             // attach new component.
             if (entityData.Components.Length == entityData.ComponentsCountX2) {
                 Array.Resize (ref entityData.Components, entityData.ComponentsCountX2 << 1);
