@@ -212,9 +212,13 @@ namespace Leopotam.Ecs {
             var filter = (EcsFilter) Activator.CreateInstance (filterType, BindingFlags.NonPublic | BindingFlags.Instance, null, _filterCtor, CultureInfo.InvariantCulture);
 #if DEBUG
             for (var filterIdx = 0; filterIdx < Filters.Count; filterIdx++) {
-                if (filter.AreComponentsSame (Filters.Items[filterIdx])) {
-                    throw new Exception (
-                        $"Invalid filter \"{filter.GetType ()}\": Another filter \"{Filters.Items[filterIdx].GetType ()}\" already has same components, but in different order.");
+                if ((filter is EcsFilterBase) == (Filters.Items[filterIdx] is EcsFilterBase))
+                {
+                    if (filter.AreComponentsSame(Filters.Items[filterIdx]))
+                    {
+                        throw new Exception(
+                            $"Invalid filter \"{filter.GetType()}\": Another filter \"{Filters.Items[filterIdx].GetType()}\" already has same components, but in different order.");
+                    }
                 }
             }
 #endif
@@ -310,8 +314,20 @@ namespace Leopotam.Ecs {
                     for (int i = 0, iMax = filters.Count; i < iMax; i++) {
                         if (filters.Items[i].IsCompatible (entityData, 0)) {
 #if DEBUG
-                            if (!filters.Items[i].GetInternalEntitiesMap ().TryGetValue (entity.GetInternalId (), out var filterIdx)) { filterIdx = -1; }
-                            if (filterIdx < 0) { throw new Exception ("Entity not in filter."); }
+                            var filter = filters.Items[i] as EcsFilterBase;
+                            if (filter != null)
+                            {
+                                if (!filter.GetInternalEntitiesMap()
+                                    .TryGetValue(entity.GetInternalId(), out var filterIdx))
+                                {
+                                    filterIdx = -1;
+                                }
+
+                                if (filterIdx < 0)
+                                {
+                                    throw new Exception("Entity not in filter.");
+                                }
+                            }
 #endif
                             filters.Items[i].OnRemoveEntity (entity);
                         }
@@ -321,8 +337,20 @@ namespace Leopotam.Ecs {
                     for (int i = 0, iMax = filters.Count; i < iMax; i++) {
                         if (filters.Items[i].IsCompatible (entityData, typeIdx)) {
 #if DEBUG
-                            if (!filters.Items[i].GetInternalEntitiesMap ().TryGetValue (entity.GetInternalId (), out var filterIdx)) { filterIdx = -1; }
-                            if (filterIdx >= 0) { throw new Exception ("Entity already in filter."); }
+                            var filter = filters.Items[i] as EcsFilterBase;
+                            if (filter != null)
+                            {
+                                if (!filter.GetInternalEntitiesMap()
+                                    .TryGetValue(entity.GetInternalId(), out var filterIdx))
+                                {
+                                    filterIdx = -1;
+                                }
+
+                                if (filterIdx >= 0)
+                                {
+                                    throw new Exception("Entity already in filter.");
+                                }
+                            }
 #endif
                             filters.Items[i].OnAddEntity (entity);
                         }
@@ -334,8 +362,20 @@ namespace Leopotam.Ecs {
                     for (int i = 0, iMax = filters.Count; i < iMax; i++) {
                         if (filters.Items[i].IsCompatible (entityData, 0)) {
 #if DEBUG
-                            if (!filters.Items[i].GetInternalEntitiesMap ().TryGetValue (entity.GetInternalId (), out var filterIdx)) { filterIdx = -1; }
-                            if (filterIdx >= 0) { throw new Exception ("Entity already in filter."); }
+                            var filter = filters.Items[i] as EcsFilterBase;
+                            if (filter != null)
+                            {
+                                if (!filter.GetInternalEntitiesMap()
+                                    .TryGetValue(entity.GetInternalId(), out var filterIdx))
+                                {
+                                    filterIdx = -1;
+                                }
+
+                                if (filterIdx >= 0)
+                                {
+                                    throw new Exception("Entity already in filter.");
+                                }
+                            }
 #endif
                             filters.Items[i].OnAddEntity (entity);
                         }
@@ -345,8 +385,20 @@ namespace Leopotam.Ecs {
                     for (int i = 0, iMax = filters.Count; i < iMax; i++) {
                         if (filters.Items[i].IsCompatible (entityData, -typeIdx)) {
 #if DEBUG
-                            if (!filters.Items[i].GetInternalEntitiesMap ().TryGetValue (entity.GetInternalId (), out var filterIdx)) { filterIdx = -1; }
-                            if (filterIdx < 0) { throw new Exception ("Entity not in filter."); }
+                            var filter = filters.Items[i] as EcsFilterBase;
+                            if (filter != null)
+                            {
+                                if (!filter.GetInternalEntitiesMap()
+                                    .TryGetValue(entity.GetInternalId(), out var filterIdx))
+                                {
+                                    filterIdx = -1;
+                                }
+
+                                if (filterIdx < 0)
+                                {
+                                    throw new Exception("Entity not in filter.");
+                                }
+                            }
 #endif
                             filters.Items[i].OnRemoveEntity (entity);
                         }

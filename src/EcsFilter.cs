@@ -32,14 +32,6 @@ namespace Leopotam.Ecs {
     [UnityEngine.Scripting.Preserve]
 #endif
     public abstract class EcsFilter {
-        protected EcsEntity[] Entities;
-        protected readonly Dictionary<int, int> EntitiesMap;
-        protected int EntitiesCount;
-        protected int LockCount;
-        protected readonly int EntitiesCacheSize;
-
-        DelayedOp[] _delayedOps;
-        int _delayedOpsCount;
 #if LEOECS_FILTER_EVENTS
         protected IEcsFilterListener[] Listeners = new IEcsFilterListener[4];
         protected int ListenersCount;
@@ -49,48 +41,6 @@ namespace Leopotam.Ecs {
 
         public Type[] IncludedTypes;
         public Type[] ExcludedTypes;
-#if UNITY_2019_1_OR_NEWER
-        [UnityEngine.Scripting.Preserve]
-#endif
-        protected EcsFilter (EcsWorld world) {
-            EntitiesCacheSize = world.Config.FilterEntitiesCacheSize;
-            Entities = new EcsEntity[EntitiesCacheSize];
-            EntitiesMap = new Dictionary<int, int> (EntitiesCacheSize);
-            _delayedOps = new DelayedOp[EntitiesCacheSize];
-        }
-#if DEBUG
-        public Dictionary<int, int> GetInternalEntitiesMap () {
-            return EntitiesMap;
-        }
-#endif
-        [MethodImpl (MethodImplOptions.AggressiveInlining)]
-        public Enumerator GetEnumerator () {
-            return new Enumerator (this);
-        }
-
-        /// <summary>
-        /// Gets entity by index.
-        /// </summary>
-        [MethodImpl (MethodImplOptions.AggressiveInlining)]
-        public ref EcsEntity GetEntity (in int idx) {
-            return ref Entities[idx];
-        }
-
-        /// <summary>
-        /// Gets entities count.
-        /// </summary>
-        [MethodImpl (MethodImplOptions.AggressiveInlining)]
-        public int GetEntitiesCount () {
-            return EntitiesCount;
-        }
-
-        /// <summary>
-        /// Is filter not contains entities.
-        /// </summary>
-        [MethodImpl (MethodImplOptions.AggressiveInlining)]
-        public bool IsEmpty () {
-            return EntitiesCount == 0;
-        }
 #if LEOECS_FILTER_EVENTS
         /// <summary>
         /// Subscribes listener to filter events.
@@ -173,19 +123,6 @@ namespace Leopotam.Ecs {
             return true;
         }
 
-        [MethodImpl (MethodImplOptions.AggressiveInlining)]
-        protected bool AddDelayedOp (bool isAdd, in EcsEntity entity) {
-            if (LockCount <= 0) {
-                return false;
-            }
-            if (_delayedOps.Length == _delayedOpsCount) {
-                Array.Resize (ref _delayedOps, _delayedOpsCount << 1);
-            }
-            ref var op = ref _delayedOps[_delayedOpsCount++];
-            op.IsAdd = isAdd;
-            op.Entity = entity;
-            return true;
-        }
 #if LEOECS_FILTER_EVENTS
         [MethodImpl (MethodImplOptions.AggressiveInlining)]
         protected void ProcessListeners (bool isAdd, in EcsEntity entity) {
@@ -200,32 +137,6 @@ namespace Leopotam.Ecs {
             }
         }
 #endif
-        [MethodImpl (MethodImplOptions.AggressiveInlining)]
-        void Lock () {
-            LockCount++;
-        }
-
-        [MethodImpl (MethodImplOptions.AggressiveInlining)]
-        void Unlock () {
-#if DEBUG
-            if (LockCount <= 0) {
-                throw new Exception ($"Invalid lock-unlock balance for \"{GetType ().Name}\".");
-            }
-#endif
-            LockCount--;
-            if (LockCount == 0 && _delayedOpsCount > 0) {
-                // process delayed operations.
-                for (int i = 0, iMax = _delayedOpsCount; i < iMax; i++) {
-                    ref var op = ref _delayedOps[i];
-                    if (op.IsAdd) {
-                        OnAddEntity (op.Entity);
-                    } else {
-                        OnRemoveEntity (op.Entity);
-                    }
-                }
-                _delayedOpsCount = 0;
-            }
-        }
 
 #if DEBUG
         /// <summary>
@@ -272,14 +183,119 @@ namespace Leopotam.Ecs {
         /// </summary>
         /// <param name="entity">Entity.</param>
         public abstract void OnRemoveEntity (in EcsEntity entity);
+    }
+
+    /// <summary>
+    /// Container for filtered entities based on specified constraints.
+    /// </summary>
+#if ENABLE_IL2CPP
+    [Unity.IL2CPP.CompilerServices.Il2CppSetOption (Unity.IL2CPP.CompilerServices.Option.NullChecks, false)]
+    [Unity.IL2CPP.CompilerServices.Il2CppSetOption (Unity.IL2CPP.CompilerServices.Option.ArrayBoundsChecks, false)]
+#endif
+#if UNITY_2019_1_OR_NEWER
+    [UnityEngine.Scripting.Preserve]
+#endif
+    public abstract class EcsFilterBase : EcsFilter {
+        protected EcsEntity[] Entities;
+        protected readonly Dictionary<int, int> EntitiesMap;
+        protected int EntitiesCount;
+        protected int LockCount;
+        protected readonly int EntitiesCacheSize;
+
+        DelayedOp[] _delayedOps;
+        int _delayedOpsCount;
+
+#if UNITY_2019_1_OR_NEWER
+        [UnityEngine.Scripting.Preserve]
+#endif
+        protected EcsFilterBase (EcsWorld world) {
+            EntitiesCacheSize = world.Config.FilterEntitiesCacheSize;
+            Entities = new EcsEntity[EntitiesCacheSize];
+            EntitiesMap = new Dictionary<int, int> (EntitiesCacheSize);
+            _delayedOps = new DelayedOp[EntitiesCacheSize];
+        }
+#if DEBUG
+        public Dictionary<int, int> GetInternalEntitiesMap () {
+            return EntitiesMap;
+        }
+#endif
+        [MethodImpl (MethodImplOptions.AggressiveInlining)]
+        public Enumerator GetEnumerator () {
+            return new Enumerator (this);
+        }
+
+        /// <summary>
+        /// Gets entity by index.
+        /// </summary>
+        [MethodImpl (MethodImplOptions.AggressiveInlining)]
+        public ref EcsEntity GetEntity (in int idx) {
+            return ref Entities[idx];
+        }
+
+        /// <summary>
+        /// Gets entities count.
+        /// </summary>
+        [MethodImpl (MethodImplOptions.AggressiveInlining)]
+        public int GetEntitiesCount () {
+            return EntitiesCount;
+        }
+
+        /// <summary>
+        /// Is filter not contains entities.
+        /// </summary>
+        [MethodImpl (MethodImplOptions.AggressiveInlining)]
+        public bool IsEmpty () {
+            return EntitiesCount == 0;
+        }
+
+        [MethodImpl (MethodImplOptions.AggressiveInlining)]
+        protected bool AddDelayedOp (bool isAdd, in EcsEntity entity) {
+            if (LockCount <= 0) {
+                return false;
+            }
+            if (_delayedOps.Length == _delayedOpsCount) {
+                Array.Resize (ref _delayedOps, _delayedOpsCount << 1);
+            }
+            ref var op = ref _delayedOps[_delayedOpsCount++];
+            op.IsAdd = isAdd;
+            op.Entity = entity;
+            return true;
+        }
+        [MethodImpl (MethodImplOptions.AggressiveInlining)]
+        void Lock () {
+            LockCount++;
+        }
+
+        [MethodImpl (MethodImplOptions.AggressiveInlining)]
+        void Unlock () {
+#if DEBUG
+            if (LockCount <= 0) {
+                throw new Exception ($"Invalid lock-unlock balance for \"{GetType ().Name}\".");
+            }
+#endif
+            LockCount--;
+            if (LockCount == 0 && _delayedOpsCount > 0) {
+                // process delayed operations.
+                for (int i = 0, iMax = _delayedOpsCount; i < iMax; i++) {
+                    ref var op = ref _delayedOps[i];
+                    if (op.IsAdd) {
+                        OnAddEntity (op.Entity);
+                    } else {
+                        OnRemoveEntity (op.Entity);
+                    }
+                }
+                _delayedOpsCount = 0;
+            }
+        }
+
 
         public struct Enumerator : IDisposable {
-            readonly EcsFilter _filter;
+            readonly EcsFilterBase _filter;
             readonly int _count;
             int _idx;
 
             [MethodImpl (MethodImplOptions.AggressiveInlining)]
-            internal Enumerator (EcsFilter filter) {
+            internal Enumerator (EcsFilterBase filter) {
                 _filter = filter;
                 _count = _filter.GetEntitiesCount ();
                 _idx = -1;
@@ -319,7 +335,7 @@ namespace Leopotam.Ecs {
 #if UNITY_2019_1_OR_NEWER
     [UnityEngine.Scripting.Preserve]
 #endif
-    public class EcsFilter<Inc1> : EcsFilter
+    public class EcsFilter<Inc1> : EcsFilterBase
         where Inc1 : struct {
         int[] _get1;
 
@@ -485,7 +501,7 @@ namespace Leopotam.Ecs {
 #if UNITY_2019_1_OR_NEWER
     [UnityEngine.Scripting.Preserve]
 #endif
-    public class EcsFilter<Inc1, Inc2> : EcsFilter
+    public class EcsFilter<Inc1, Inc2> : EcsFilterBase
         where Inc1 : struct
         where Inc2 : struct {
         int[] _get1;
@@ -637,7 +653,7 @@ namespace Leopotam.Ecs {
 #if UNITY_2019_1_OR_NEWER
     [UnityEngine.Scripting.Preserve]
 #endif
-    public class EcsFilter<Inc1, Inc2, Inc3> : EcsFilter
+    public class EcsFilter<Inc1, Inc2, Inc3> : EcsFilterBase
         where Inc1 : struct
         where Inc2 : struct
         where Inc3 : struct {
@@ -815,7 +831,7 @@ namespace Leopotam.Ecs {
 #if UNITY_2019_1_OR_NEWER
     [UnityEngine.Scripting.Preserve]
 #endif
-    public class EcsFilter<Inc1, Inc2, Inc3, Inc4> : EcsFilter
+    public class EcsFilter<Inc1, Inc2, Inc3, Inc4> : EcsFilterBase
         where Inc1 : struct
         where Inc2 : struct
         where Inc3 : struct
@@ -1011,4 +1027,342 @@ namespace Leopotam.Ecs {
             }
         }
     }
+
+    // ============================= ECS Lite Filter ==============================
+
+#if ENABLE_IL2CPP
+    [Unity.IL2CPP.CompilerServices.Il2CppSetOption (Unity.IL2CPP.CompilerServices.Option.NullChecks, false)]
+    [Unity.IL2CPP.CompilerServices.Il2CppSetOption (Unity.IL2CPP.CompilerServices.Option.ArrayBoundsChecks, false)]
+#endif
+#if UNITY_2019_1_OR_NEWER
+    [UnityEngine.Scripting.Preserve]
+#endif
+    public class EcsLiteFilter<Inc1> : EcsFilter
+        where Inc1 : struct {
+
+#if UNITY_2019_1_OR_NEWER
+        [UnityEngine.Scripting.Preserve]
+#endif
+        protected EcsLiteFilter (EcsWorld world) {
+            IncludedTypeIndices = new[] {
+                EcsComponentType<Inc1>.TypeIndex
+            };
+            IncludedTypes = new[] {
+                EcsComponentType<Inc1>.Type
+            };
+        }
+
+        /// <summary>
+        /// Event for adding compatible entity to filter.
+        /// Warning: Don't call manually!
+        /// </summary>
+        /// <param name="entity">Entity.</param>
+        [MethodImpl (MethodImplOptions.AggressiveInlining)]
+        public override void OnAddEntity (in EcsEntity entity) {
+#if LEOECS_FILTER_EVENTS
+            ProcessListeners (true, entity);
+#endif
+        }
+
+        /// <summary>
+        /// Event for removing non-compatible entity to filter.
+        /// Warning: Don't call manually!
+        /// </summary>
+        /// <param name="entity">Entity.</param>
+        [MethodImpl (MethodImplOptions.AggressiveInlining)]
+        public override void OnRemoveEntity (in EcsEntity entity) {
+#if LEOECS_FILTER_EVENTS
+            ProcessListeners (false, entity);
+#endif
+        }
+
+        public class Exclude<Exc1> : EcsLiteFilter<Inc1>
+            where Exc1 : struct {
+#if UNITY_2019_1_OR_NEWER
+            [UnityEngine.Scripting.Preserve]
+#endif
+            protected Exclude (EcsWorld world) : base (world) {
+                ExcludedTypeIndices = new[] {
+                    EcsComponentType<Exc1>.TypeIndex
+                };
+                ExcludedTypes = new[] {
+                    EcsComponentType<Exc1>.Type
+                };
+            }
+        }
+
+        public class Exclude<Exc1, Exc2> : EcsLiteFilter<Inc1>
+            where Exc1 : struct
+            where Exc2 : struct {
+#if UNITY_2019_1_OR_NEWER
+            [UnityEngine.Scripting.Preserve]
+#endif
+            protected Exclude (EcsWorld world) : base (world) {
+                ExcludedTypeIndices = new[] {
+                    EcsComponentType<Exc1>.TypeIndex,
+                    EcsComponentType<Exc2>.TypeIndex
+                };
+                ExcludedTypes = new[] {
+                    EcsComponentType<Exc1>.Type,
+                    EcsComponentType<Exc2>.Type
+                };
+            }
+        }
+    }
+
+#if ENABLE_IL2CPP
+    [Unity.IL2CPP.CompilerServices.Il2CppSetOption (Unity.IL2CPP.CompilerServices.Option.NullChecks, false)]
+    [Unity.IL2CPP.CompilerServices.Il2CppSetOption (Unity.IL2CPP.CompilerServices.Option.ArrayBoundsChecks, false)]
+#endif
+#if UNITY_2019_1_OR_NEWER
+    [UnityEngine.Scripting.Preserve]
+#endif
+    public class EcsLiteFilter<Inc1, Inc2> : EcsFilter
+        where Inc1 : struct
+        where Inc2 : struct {
+#if UNITY_2019_1_OR_NEWER
+        [UnityEngine.Scripting.Preserve]
+#endif
+        protected EcsLiteFilter (EcsWorld world) {
+            IncludedTypeIndices = new[] {
+                EcsComponentType<Inc1>.TypeIndex,
+                EcsComponentType<Inc2>.TypeIndex
+            };
+            IncludedTypes = new[] {
+                EcsComponentType<Inc1>.Type,
+                EcsComponentType<Inc2>.Type
+            };
+        }
+
+        /// <summary>
+        /// Event for adding compatible entity to filter.
+        /// Warning: Don't call manually!
+        /// </summary>
+        /// <param name="entity">Entity.</param>
+        [MethodImpl (MethodImplOptions.AggressiveInlining)]
+        public override void OnAddEntity (in EcsEntity entity) {
+#if LEOECS_FILTER_EVENTS
+            ProcessListeners (true, entity);
+#endif
+        }
+
+        /// <summary>
+        /// Event for removing non-compatible entity to filter.
+        /// Warning: Don't call manually!
+        /// </summary>
+        /// <param name="entity">Entity.</param>
+        [MethodImpl (MethodImplOptions.AggressiveInlining)]
+        public override void OnRemoveEntity (in EcsEntity entity) {
+#if LEOECS_FILTER_EVENTS
+            ProcessListeners (false, entity);
+#endif
+        }
+
+        public class Exclude<Exc1> : EcsLiteFilter<Inc1, Inc2>
+            where Exc1 : struct {
+#if UNITY_2019_1_OR_NEWER
+            [UnityEngine.Scripting.Preserve]
+#endif
+            protected Exclude (EcsWorld world) : base (world) {
+                ExcludedTypeIndices = new[] {
+                    EcsComponentType<Exc1>.TypeIndex
+                };
+                ExcludedTypes = new[] {
+                    EcsComponentType<Exc1>.Type
+                };
+            }
+        }
+
+        public class Exclude<Exc1, Exc2> : EcsLiteFilter<Inc1, Inc2>
+            where Exc1 : struct
+            where Exc2 : struct {
+#if UNITY_2019_1_OR_NEWER
+            [UnityEngine.Scripting.Preserve]
+#endif
+            protected Exclude (EcsWorld world) : base (world) {
+                ExcludedTypeIndices = new[] {
+                    EcsComponentType<Exc1>.TypeIndex,
+                    EcsComponentType<Exc2>.TypeIndex
+                };
+                ExcludedTypes = new[] {
+                    EcsComponentType<Exc1>.Type,
+                    EcsComponentType<Exc2>.Type
+                };
+            }
+        }
+    }
+
+#if ENABLE_IL2CPP
+    [Unity.IL2CPP.CompilerServices.Il2CppSetOption (Unity.IL2CPP.CompilerServices.Option.NullChecks, false)]
+    [Unity.IL2CPP.CompilerServices.Il2CppSetOption (Unity.IL2CPP.CompilerServices.Option.ArrayBoundsChecks, false)]
+#endif
+#if UNITY_2019_1_OR_NEWER
+    [UnityEngine.Scripting.Preserve]
+#endif
+    public class EcsLiteFilter<Inc1, Inc2, Inc3> : EcsFilter
+        where Inc1 : struct
+        where Inc2 : struct
+        where Inc3 : struct {
+#if UNITY_2019_1_OR_NEWER
+        [UnityEngine.Scripting.Preserve]
+#endif
+        protected EcsLiteFilter (EcsWorld world)  {
+            IncludedTypeIndices = new[] {
+                EcsComponentType<Inc1>.TypeIndex,
+                EcsComponentType<Inc2>.TypeIndex,
+                EcsComponentType<Inc3>.TypeIndex
+            };
+            IncludedTypes = new[] {
+                EcsComponentType<Inc1>.Type,
+                EcsComponentType<Inc2>.Type,
+                EcsComponentType<Inc3>.Type
+            };
+        }
+
+        /// <summary>
+        /// Event for adding compatible entity to filter.
+        /// Warning: Don't call manually!
+        /// </summary>
+        /// <param name="entity">Entity.</param>
+        [MethodImpl (MethodImplOptions.AggressiveInlining)]
+        public override void OnAddEntity (in EcsEntity entity) {
+#if LEOECS_FILTER_EVENTS
+            ProcessListeners (true, entity);
+#endif
+        }
+
+        /// <summary>
+        /// Event for removing non-compatible entity to filter.
+        /// Warning: Don't call manually!
+        /// </summary>
+        /// <param name="entity">Entity.</param>
+        [MethodImpl (MethodImplOptions.AggressiveInlining)]
+        public override void OnRemoveEntity (in EcsEntity entity) {
+#if LEOECS_FILTER_EVENTS
+            ProcessListeners (false, entity);
+#endif
+        }
+
+        public class Exclude<Exc1> : EcsLiteFilter<Inc1, Inc2, Inc3>
+            where Exc1 : struct {
+#if UNITY_2019_1_OR_NEWER
+            [UnityEngine.Scripting.Preserve]
+#endif
+            protected Exclude (EcsWorld world) : base (world) {
+                ExcludedTypeIndices = new[] {
+                    EcsComponentType<Exc1>.TypeIndex
+                };
+                ExcludedTypes = new[] {
+                    EcsComponentType<Exc1>.Type
+                };
+            }
+        }
+
+        public class Exclude<Exc1, Exc2> : EcsLiteFilter<Inc1, Inc2, Inc3>
+            where Exc1 : struct
+            where Exc2 : struct {
+#if UNITY_2019_1_OR_NEWER
+            [UnityEngine.Scripting.Preserve]
+#endif
+            protected Exclude (EcsWorld world) : base (world) {
+                ExcludedTypeIndices = new[] {
+                    EcsComponentType<Exc1>.TypeIndex,
+                    EcsComponentType<Exc2>.TypeIndex
+                };
+                ExcludedTypes = new[] {
+                    EcsComponentType<Exc1>.Type,
+                    EcsComponentType<Exc2>.Type
+                };
+            }
+        }
+    }
+
+#if ENABLE_IL2CPP
+    [Unity.IL2CPP.CompilerServices.Il2CppSetOption (Unity.IL2CPP.CompilerServices.Option.NullChecks, false)]
+    [Unity.IL2CPP.CompilerServices.Il2CppSetOption (Unity.IL2CPP.CompilerServices.Option.ArrayBoundsChecks, false)]
+#endif
+#if UNITY_2019_1_OR_NEWER
+    [UnityEngine.Scripting.Preserve]
+#endif
+    public class EcsLiteFilter<Inc1, Inc2, Inc3, Inc4> : EcsFilter
+        where Inc1 : struct
+        where Inc2 : struct
+        where Inc3 : struct
+        where Inc4 : struct {
+#if UNITY_2019_1_OR_NEWER
+        [UnityEngine.Scripting.Preserve]
+#endif
+        protected EcsLiteFilter (EcsWorld world) {
+            IncludedTypeIndices = new[] {
+                EcsComponentType<Inc1>.TypeIndex,
+                EcsComponentType<Inc2>.TypeIndex,
+                EcsComponentType<Inc3>.TypeIndex,
+                EcsComponentType<Inc4>.TypeIndex
+            };
+            IncludedTypes = new[] {
+                EcsComponentType<Inc1>.Type,
+                EcsComponentType<Inc2>.Type,
+                EcsComponentType<Inc3>.Type,
+                EcsComponentType<Inc4>.Type
+            };
+        }
+
+        /// <summary>
+        /// Event for adding compatible entity to filter.
+        /// Warning: Don't call manually!
+        /// </summary>
+        /// <param name="entity">Entity.</param>
+        [MethodImpl (MethodImplOptions.AggressiveInlining)]
+        public override void OnAddEntity (in EcsEntity entity) {
+#if LEOECS_FILTER_EVENTS
+            ProcessListeners (true, entity);
+#endif
+        }
+
+        /// <summary>
+        /// Event for removing non-compatible entity to filter.
+        /// Warning: Don't call manually!
+        /// </summary>
+        /// <param name="entity">Entity.</param>
+        [MethodImpl (MethodImplOptions.AggressiveInlining)]
+        public override void OnRemoveEntity (in EcsEntity entity) {
+#if LEOECS_FILTER_EVENTS
+            ProcessListeners (false, entity);
+#endif
+        }
+
+        public class Exclude<Exc1> : EcsLiteFilter<Inc1, Inc2, Inc3, Inc4>
+            where Exc1 : struct {
+#if UNITY_2019_1_OR_NEWER
+            [UnityEngine.Scripting.Preserve]
+#endif
+            protected Exclude (EcsWorld world) : base (world) {
+                ExcludedTypeIndices = new[] {
+                    EcsComponentType<Exc1>.TypeIndex
+                };
+                ExcludedTypes = new[] {
+                    EcsComponentType<Exc1>.Type
+                };
+            }
+        }
+
+        public class Exclude<Exc1, Exc2> : EcsLiteFilter<Inc1, Inc2, Inc3, Inc4>
+            where Exc1 : struct
+            where Exc2 : struct {
+#if UNITY_2019_1_OR_NEWER
+            [UnityEngine.Scripting.Preserve]
+#endif
+            protected Exclude (EcsWorld world) : base (world) {
+                ExcludedTypeIndices = new[] {
+                    EcsComponentType<Exc1>.TypeIndex,
+                    EcsComponentType<Exc2>.TypeIndex
+                };
+                ExcludedTypes = new[] {
+                    EcsComponentType<Exc1>.Type,
+                    EcsComponentType<Exc2>.Type
+                };
+            }
+        }
+    }
+
 }

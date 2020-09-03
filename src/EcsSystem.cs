@@ -274,7 +274,18 @@ namespace Leopotam.Ecs {
             for (int i = 0, iMax = _runSystems.Count; i < iMax; i++) {
                 var runItem = _runSystems.Items[i];
                 if (runItem.Active) {
+#if DEBUG && UNITY_EDITOR
+                    try
+                    {
+                        runItem.System.Run ();
+                    }
+                    catch (Exception e)
+                    {
+                        UnityEngine.Debug.LogError(e);
+                    }
+#else
                     runItem.System.Run ();
+#endif
                 }
 #if DEBUG
                 if (World.CheckForLeakedEntities (null)) {
